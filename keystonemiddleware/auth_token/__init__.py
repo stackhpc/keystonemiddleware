@@ -279,21 +279,26 @@ def list_opts():
 
 def _path_matches(request_path, path_pattern):
     # The fnmatch module doesn't provide the ability to match * versus **,
-    # so convert to regex.
-    token_regex = (r'(?P<tag>{[^}]*})|'  # {tag} # nosec
-                   r'(?P<wild>\*(?=$|[^\*]))|'  # *
-                   r'(?P<rec_wild>\*\*)|'  # **
-                   r'(?P<literal>[^{}\*])')  # anything else
-    path_regex = ''
+    # so convert to regex. Documented access_rules path syntax is wildcard
+    # only (*, **, {tag}); every other character is a literal and must be
+    # escaped so regex metacharacters in the pattern cannot broaden the
+    # match or trigger ReDoS (bug 2167923).
+    token_regex = (
+        r"(?P<tag>{[^}]*})|"  # {tag} # noqa: S105
+        r"(?P<wild>\*(?=$|[^\*]))|"  # *
+        r"(?P<rec_wild>\*\*)|"  # **
+        r"(?P<literal>[^{}\*])"
+    )  # anything else
+    path_regex = ""
     for match in re.finditer(token_regex, path_pattern):
         token = match.groupdict()
-        if token['tag'] or token['wild']:
-            path_regex += r'[^\/]+'
-        if token['rec_wild']:
-            path_regex += '.*'
-        if token['literal']:
-            path_regex += token['literal']
-    path_regex = r'^%s$' % path_regex
+        if token["tag"] or token["wild"]:
+            path_regex += r"[^\/]+"
+        if token["rec_wild"]:
+            path_regex += ".*"
+        if token["literal"]:
+            path_regex += re.escape(token["literal"])
+    path_regex = rf"^{path_regex}$"
     return re.match(path_regex, request_path)
 
 
