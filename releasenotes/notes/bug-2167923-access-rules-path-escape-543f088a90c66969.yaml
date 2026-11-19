@@ -1,0 +1,20 @@
+---
+security:
+  - |
+    [`bug 2167923 <https://launchpad.net/bugs/2167923>`_]
+    Application credential ``access_rules`` path matching in
+    ``auth_token`` middleware now treats non-wildcard characters as
+    literals (``re.escape``). Documented wildcard syntax (``*``,
+    ``**``, ``{tag}``) is unchanged. Previously regex
+    metacharacters in a path pattern (for example ``.`` in
+    ``/v2.1/...``) broadened matches beyond the intended literal
+    path. Because access rules are set by application credential
+    owners, an authenticated user could also craft a pattern that
+    caused regular-expression denial of service in the middleware.
+fixes:
+  - |
+    Access rule path patterns containing regular expression
+    metacharacters (such as ``.``, ``+`` or ``(``) are now matched
+    literally. Deployments that relied on those characters acting as
+    regular expressions must switch to the documented ``*``, ``**`` and
+    ``{tag}`` wildcards.
